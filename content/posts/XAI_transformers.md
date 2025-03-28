@@ -320,26 +320,31 @@ This implementation trick, though minimal, has a major impact: it transforms Gra
 <h3 id="experiments">6. Confirmation with Experiments</h3>
 
 <p>
-To validate their method, the authors compare the performance of their <strong>LRP (AH+LN)</strong> approach with several established attribution techniques across a wide range of tasks. These include:
+So, does this new way of propagating relevance through Transformers actually work better? The authors ran a bunch of experiments to find out — and the short answer is: <strong>yes, absolutely</strong>.
 </p>
+
+<p>
+The method  (<strong>LRP (AH+LN)</strong>) was tested against several well-known explanation techniques across a variety of tasks. We're talking about:
+</p>
+
 <ul>
-  <li><strong>Text classification</strong> (IMDB, SST-2, Tweet Sentiment)</li>
-  <li><strong>Digit recognition</strong> (MNIST)</li>
-  <li><strong>Molecular property prediction</strong> (BACE)</li>
+  <li><strong>Text classification</strong> : movie reviews (IMDB), sentiment tweets, and SST-2</li>
+  <li><strong>Image recognition</strong> : handwritten digits with MNIST</li>
+  <li><strong>Molecular prediction</strong> : predicting biochemical properties from molecule data (BACE)</li>
 </ul>
 
 <p>
-The evaluation spans both <strong>quantitative metrics</strong> (how well relevance aligns with ground-truth importance) and <strong>qualitative criteria</strong> (clarity, specificity, and noise in the explanation).
+To evaluate how good the explanations were, they looked at two key aspects:
 </p>
+<ul>
+  <li><strong>Quantitative metrics</strong>: How well does the explanation match the model’s actual reasoning?</li>
+  <li><strong>Qualitative impressions</strong>: Are the explanations clear, focused, and free from noise?</li>
+</ul>
 
 <h4 id="quantitative-results">6.1 Quantitative Results</h4>
 
 <p>
-To assess how well each explanation method identifies truly relevant input features, the authors report the <strong>Area Under the Activation Curve (AUAC)</strong> across four representative datasets from different domains.
-</p>
-
-<p>
-The table below highlights the AUAC scores of various methods. The higher the AUAC, the more accurately the explanation aligns with the model's internal reasoning. The proposed method <strong>LRP (AH+LN)</strong> consistently outperforms all other baselines.
+For the quantitative evaluation, the authors use <strong>AUAC</strong> (Area Under the Activation Curve), that measures how well an explanation highlights the most relevant parts of the input, according to the model’s own internal behavior. In this context, a higher AUAC indicates a more faithful and precise explanation.
 </p>
 
 <style>
@@ -466,6 +471,36 @@ While AUAC scores are useful, a good explanation should also be easy for humans 
   }
 </style>
 
+<style>
+  table.qualitative-results {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1em;
+    font-size: 15px;
+  }
+
+  table.qualitative-results th, 
+  table.qualitative-results td {
+    border: 1px solid #ddd;
+    padding: 12px 18px;
+    text-align: center;
+  }
+
+  table.qualitative-results th {
+    background-color: #f9f9f9;
+    font-weight: bold;
+  }
+
+  table.qualitative-results td:first-child {
+    text-align: left;
+  }
+
+  table.qualitative-results tr.highlight {
+    background-color: #fff8dc; /* light yellow */
+    font-weight: bold;
+  }
+</style>
+
 <table class="qualitative-results">
   <thead>
     <tr>
@@ -506,7 +541,7 @@ While AUAC scores are useful, a good explanation should also be easy for humans 
       <td>High</td>
       <td>Low</td>
     </tr>
-    <tr>
+    <tr class="highlight">
       <td><strong>LRP (AH + LN)</strong> <br><em>(proposed)</em></td>
       <td><strong>Very High</strong></td>
       <td><strong>Very High</strong></td>
@@ -515,13 +550,20 @@ While AUAC scores are useful, a good explanation should also be easy for humans 
   </tbody>
 </table>
 
-<h4> Key Takeaways</h4>
+<h3 id="conclusion">7. Key Takeaway</h3>
+<p>
+Interpreting Transformer models is not straightforward — standard attribution methods often fail to accurately trace relevance through components like Attention Heads and LayerNorm. In this blog post, we explored a targeted solution introduced by Ali et al., which consists in approximating these components as locally linear during explanation.
+</p>
 
-<ul>
-  <li><strong>LRP (AH+LN)</strong> achieves the best performance both quantitatively (AUAC) and qualitatively.</li>
-  <li>The method produces cleaner, more focused explanations, especially in challenging or noisy datasets.</li>
-  <li>Freezing attention weights and normalization statistics proves to be a simple yet powerful fix for improving XAI in Transformers.</li>
-</ul>
+<p>
+This small conceptual shift restores the conservation of relevance and significantly improves the quality of explanations. The results speak for themselves: more precise, less noisy, and more interpretable relevance maps across a wide range of tasks.
+</p>
+
+<p>
+<strong>Stay tuned for a follow-up code tutorial !!!</strong>
+</p>
+
+
 
 <h3 id="references">References</h3>
 
