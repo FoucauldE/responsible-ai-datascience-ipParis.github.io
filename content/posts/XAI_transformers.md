@@ -335,102 +335,101 @@ The evaluation spans both <strong>quantitative metrics</strong> (how well releva
 <h4 id="quantitative-results">6.1 Quantitative Results</h4>
 
 <p>
-The main quantitative metric used is the <strong>Area Under the Attribution Curve (AUAC)</strong>. It evaluates how much the relevance scores align with input features that are important to the model's decision. A higher AUAC score indicates better fidelity of the explanation.
+To assess how well each explanation method identifies truly relevant input features, the authors report the <strong>Area Under the Activation Curve (AUAC)</strong> across four representative datasets from different domains.
 </p>
 
 <p>
-The table below shows a selection of results across datasets. The proposed <strong>LRP (AH+LN)</strong> approach consistently outperforms other methods, especially in complex or noisy settings like tweets or molecules.
+The table below highlights the AUAC scores of various methods. The higher the AUAC, the more accurately the explanation aligns with the model's internal reasoning. The proposed method <strong>LRP (AH+LN)</strong> consistently outperforms all other baselines.
 </p>
 
 <style>
-  table.auac-results {
+  table.auac-table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 1em;
   }
 
-  table.auac-results th,
-  table.auac-results td {
+  table.auac-table th,
+  table.auac-table td {
     border: 1px solid #ddd;
     padding: 10px 16px;
     text-align: center;
   }
 
-  table.auac-results th {
+  table.auac-table th {
     background-color: #f2f2f2;
   }
 
-  table.auac-results td:first-child {
+  table.auac-table td:first-child {
     text-align: left;
+  }
+
+  table.auac-table tr:last-child {
+    background-color: #fdf5e6;
+    font-weight: bold;
   }
 </style>
 
-<table class="auac-results">
+<table class="auac-table">
   <thead>
     <tr>
       <th>Method</th>
       <th>IMDB</th>
       <th>SST-2</th>
-      <th>Tweet</th>
-      <th>MNIST</th>
       <th>BACE</th>
+      <th>MNIST</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <td>Random</td>
-      <td>0.51</td>
-      <td>0.50</td>
-      <td>0.52</td>
-      <td>0.51</td>
-      <td>0.49</td>
+      <td>0.673</td>
+      <td>0.664</td>
+      <td>0.624</td>
+      <td>0.324</td>
     </tr>
     <tr>
       <td>Attention (last)</td>
-      <td>0.58</td>
-      <td>0.60</td>
-      <td>0.56</td>
-      <td>0.57</td>
-      <td>0.55</td>
+      <td>0.708</td>
+      <td>0.712</td>
+      <td>0.620</td>
+      <td>0.862</td>
     </tr>
     <tr>
       <td>Rollout</td>
-      <td>0.60</td>
-      <td>0.63</td>
-      <td>0.59</td>
-      <td>0.60</td>
-      <td>0.58</td>
+      <td>0.738</td>
+      <td>0.713</td>
+      <td>0.653</td>
+      <td>0.358</td>
     </tr>
     <tr>
       <td>GAE</td>
-      <td>0.66</td>
-      <td>0.69</td>
-      <td>0.62</td>
-      <td>0.65</td>
-      <td>0.64</td>
+      <td>0.872</td>
+      <td>0.821</td>
+      <td>0.675</td>
+      <td>0.426</td>
     </tr>
     <tr>
       <td>GI (Gradient × Input)</td>
-      <td>0.68</td>
-      <td>0.71</td>
-      <td>0.66</td>
-      <td>0.68</td>
-      <td>0.67</td>
+      <td>0.920</td>
+      <td>0.847</td>
+      <td>0.646</td>
+      <td>0.942</td>
     </tr>
     <tr>
-      <td><strong>LRP (AH + LN)</strong></td>
-      <td><strong>0.75</strong></td>
-      <td><strong>0.78</strong></td>
-      <td><strong>0.72</strong></td>
-      <td><strong>0.74</strong></td>
-      <td><strong>0.73</strong></td>
+      <td><strong>LRP (AH+LN)</strong></td>
+      <td><strong>0.939</strong></td>
+      <td><strong>0.908</strong></td>
+      <td><strong>0.707</strong></td>
+      <td><strong>0.948</strong></td>
     </tr>
   </tbody>
 </table>
 
 <p>
-The gains are particularly visible on challenging datasets like <strong>Tweet Sentiment</strong> and <strong>BACE</strong>, where existing methods often struggle with noise or complex feature dependencies.
+These results show that <strong>LRP (AH+LN)</strong> not only preserves theoretical properties like conservation, but also translates into superior empirical performance across tasks ranging from sentiment analysis to molecular prediction.
 </p>
+
 
 <h4 id="qualitative-results">6.2 Qualitative Comparison</h4>
 
