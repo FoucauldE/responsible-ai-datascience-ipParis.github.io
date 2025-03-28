@@ -439,37 +439,16 @@ These results show that <strong>LRP (AH+LN)</strong> not only preserves theoreti
 <h4 id="qualitative-results">6.2 Qualitative Comparison</h4>
 
 <p>
-While AUAC scores are useful, a good explanation should also be easy for humans to interpret. The table below compares different methods on three qualitative criteria:
+Beyond metrics like AUAC, the authors also examine how different explanation methods behave in practice — both on language (SST-2) and vision (MNIST) tasks. In particular, they visualize how each method highlights relevant input features, and compare their interpretability and focus.
 </p>
-<ul>
-  <li><strong>Interpretability</strong>: Are the explanations easy to understand?</li>
-  <li><strong>Specificity</strong>: Do they focus on relevant input areas?</li>
-  <li><strong>Noise</strong>: Do they avoid highlighting irrelevant information?</li>
-</ul>
 
-<style>
-  table.qualitative-results {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 1em;
-  }
+<p>
+On the SST-2 dataset, all methods correctly assign relevance to the words “best” and “virtues” in a positively labeled sentence. However, <strong>A-Last</strong> overly emphasizes the word “eastwood”, suggesting an undesirable bias toward named entities. In contrast, <strong>LRP (AH)</strong> and <strong>LRP (AH+LN)</strong> downplay such entity tokens and focus more on sentiment-related words — resulting in more robust and generalizable explanations.
+</p>
 
-  table.qualitative-results th, 
-  table.qualitative-results td {
-    border: 1px solid #ddd;
-    padding: 12px 18px;
-    text-align: center;
-  }
-
-  table.qualitative-results th {
-    background-color: #f9f9f9;
-    font-weight: bold;
-  }
-
-  table.qualitative-results td:first-child {
-    text-align: left;
-  }
-</style>
+<p>
+On MNIST (Graphormer model), the same pattern holds: <strong>LRP (AH+LN)</strong> better localizes the relevance onto the digit-containing superpixels, while attention-based methods like <strong>Rollout</strong> tend to spread relevance into the background. This confirms that the proposed method yields more precise and informative visualizations.
+</p>
 
 <style>
   table.qualitative-results {
@@ -496,7 +475,7 @@ While AUAC scores are useful, a good explanation should also be easy for humans 
   }
 
   table.qualitative-results tr.highlight {
-    background-color: #fff8dc; /* light yellow */
+    background-color: #fff8dc;
     font-weight: bold;
   }
 </style>
@@ -506,34 +485,22 @@ While AUAC scores are useful, a good explanation should also be easy for humans 
     <tr>
       <th>Method</th>
       <th>Interpretability</th>
-      <th>Specificity</th>
-      <th>Noise in Explanations</th>
+      <th>Focus on Relevant Inputs</th>
+      <th>Entity/Background Bias</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td>Random</td>
-      <td>Low</td>
-      <td>Very Low</td>
+      <td>A-Last</td>
+      <td>Moderate</td>
+      <td>Moderate</td>
       <td>High</td>
-    </tr>
-    <tr>
-      <td>Attention (last layer)</td>
-      <td>Moderate</td>
-      <td>Low</td>
-      <td>Moderate</td>
     </tr>
     <tr>
       <td>Rollout</td>
       <td>Moderate</td>
+      <td>Low–Moderate</td>
       <td>Moderate</td>
-      <td>Moderate</td>
-    </tr>
-    <tr>
-      <td>GAE</td>
-      <td>High</td>
-      <td>Moderate</td>
-      <td>Low</td>
     </tr>
     <tr>
       <td>GI (Gradient × Input)</td>
@@ -541,14 +508,25 @@ While AUAC scores are useful, a good explanation should also be easy for humans 
       <td>High</td>
       <td>Low</td>
     </tr>
+    <tr>
+      <td>LRP (AH)</td>
+      <td>High</td>
+      <td>High</td>
+      <td>Low</td>
+    </tr>
     <tr class="highlight">
-      <td><strong>LRP (AH + LN)</strong> <br><em>(proposed)</em></td>
+      <td><strong>LRP (AH+LN)</strong> <br><em>(proposed)</em></td>
       <td><strong>Very High</strong></td>
       <td><strong>Very High</strong></td>
       <td><strong>Very Low</strong></td>
     </tr>
   </tbody>
 </table>
+
+<p>
+These qualitative results support the idea that conservation-aware relevance propagation leads to sharper, more focused explanations — and avoids biases toward irrelevant tokens or background noise.
+</p>
+
 
 <h3 id="conclusion">7. Key Takeaway</h3>
 <p>
