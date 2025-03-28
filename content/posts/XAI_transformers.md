@@ -211,7 +211,7 @@ $$
 $$
 
 <p>
-If this equality is maintained throughout the entire network — from the output all the way back to the input — then the method is said to be <strong>globally conservative</strong>. When the rule fails to preserve this equality at any layer, we say that conservation breaks, and the explanation becomes less trustworthy.
+If this equality is maintained between the output to the input then the method is said to be <strong>globally conservative</strong>. When the rule fails to preserve this equality at any layer, we say that conservation breaks, and the explanation becomes less trustworthy.
 </p>
 
 
@@ -246,6 +246,141 @@ In the case of Layer Normalization, the focus is on the centering and scaling op
 These findings show that classical LRP rules cannot be directly applied to Transformers without modification. Addressing these structural issues is necessary for building explanation methods that preserve conservation and provide trustworthy insights into model behavior.
 </p>
 
+<h3 id="fixing-breaks">5. Fixing conservation breaks: a simple but effective trick</h3>
+
+<p>
+To restore conservation in Transformers, the authors propose a solution: instead of redesigning a new attribution method from scratch, they adjust how existing methods (like <em>Gradient × Input</em>) are applied by introducing a <strong>locally linear approximation</strong> of the attention heads and LayerNorm layers. This trick allows them to reuse the rules from LRP while preserving theoretical soundness.
+</p>
+
+<p><strong>Locally linear expansion for Attention Heads:</strong></p>
+
+<p>
+During explanation time, the attention mechanism
+$$ y_j = \sum_i x_i \, p_{ij} $$
+is approximated by treating the attention weights \( p_{ij} \) — which normally depend on the input — as fixed constants. This means we "freeze" them so that no gradient is propagated through the softmax. The attention head is then seen as a simple linear layer with fixed coefficients, and the relevance can be propagated using the following LRP rule:
+</p>
+
+$$
+\mathcal{R}(x_i) = \sum_j \frac{x_i \, p_{ij}}{\sum_{i'} x_{i'} \, p_{i'j}} \, \mathcal{R}(y_j) \quad \text{(AH-rule)}
+$$
+
+<p>
+This linearization not only restores conservation but also simplifies the computation, as no gradients need to flow through the attention scores.
+</p>
+
+<p><strong>Locally linear expansion for LayerNorm:</strong></p>
+
+<p>
+LayerNorm applies a normalization step that shifts and scales the input:
+</p>
+
+$$
+y_i = \frac{x_i - \mathbb{E}[x]}{\sqrt{\varepsilon + \mathrm{Var}[x]}}
+$$
+
+<p>
+Here too, the trick is to <strong>freeze the normalization factor</strong> \( \alpha = \frac{1}{\sqrt{\varepsilon + \mathrm{Var}[x]}} \). Once this is done, the transformation becomes linear again, and can be expressed as:
+</p>
+
+$$
+y = \alpha Cx, \quad \text{where} \quad C = I - \frac{1}{N} \mathbf{1}\mathbf{1}^\top
+$$
+
+<p>
+The corresponding relevance rule — known as the <strong>LN-rule</strong> — is then:
+</p>
+
+$$
+\mathcal{R}(x_i) = \sum_j \frac{x_i \, C_{ij}}{\sum_{i'} x_{i'} \, C_{i'j}} \, \mathcal{R}(y_j) \quad \text{(LN-rule)}
+$$
+
+<p>
+Freezing these components essentially allows the explanation to bypass their non-linearities, making the relevance propagation both tractable and faithful to the model's internal behavior.
+</p>
+
+<p><strong>Implementation made easy:</strong></p>
+
+<p>
+The best part about this method ? This strategy is remarkably simple to implement. In practice, you don’t need to rewrite custom backward rules. All you need to do is freeze the components during the forward pass using the <code>.detach()</code> function in PyTorch. For example:
+</p>
+
+<ul>
+  <li>Replace \( p_{ij} \) with <code>p_{ij}.detach()</code> inside attention layers</li>
+  <li>Freeze \( \sqrt{\varepsilon + \mathrm{Var}[x]} \) in LayerNorm by detaching it</li>
+</ul>
+
+<p>
+Then, you can run your usual <em>Gradient × Input</em> attribution as usual — except now, the relevance propagation respects conservation and produces more trustworthy explanations. As a bonus, computation is faster since gradients no longer need to be computed through these detached components.
+</p>
+
+<p>
+This implementation trick, though minimal, has a major impact: it transforms Gradient × Input from a noisy, non-conservative method into a principled, conservation-respecting explanation technique for Transformers.
+</p>
+
+
+
+<h3 id="experiments">6. Confirmation with experiments</h3>
+
+The authors evaluate their proposed Layer-wise Relevance Propagation (LRP) method for Transformers by comparing it with several established baseline methods across various datasets. The proposed LRP (AH+LN) method, which specifically improves relevance propagation through Attention Heads and LayerNorm layers, consistently demonstrates superior performance. Experiments were conducted on datasets from different domains, including text classification (IMDB, SST-2, Tweet Sentiment), digit recognition (MNIST), and molecular modeling (BACE).
+
+Quantitative evaluations, measured through the area under the activation curve (AUAC), show that the proposed method provides more accurate and interpretable explanations, activating relevant input features more effectively.
+
+<h4 id="apply-transformers">6.1 Qualitative Results Summary</h4>
+The table below summarizes qualitative results, highlighting the interpretability and specificity of explanations provided by each method:
+
+
+<table>
+  <thead>
+    <tr>
+      <th style="text-align:left">Method</th>
+      <th style="text-align:center">Interpretability</th>
+      <th style="text-align:center">Specificity</th>
+      <th style="text-align:center">Noise in Explanations</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align:left">Random</td>
+      <td style="text-align:center">Low</td>
+      <td style="text-align:center">Very Low</td>
+      <td style="text-align:center">High</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">Attention (last)</td>
+      <td style="text-align:center">Moderate</td>
+      <td style="text-align:center">Low</td>
+      <td style="text-align:center">Moderate</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">Rollout</td>
+      <td style="text-align:center">Moderate</td>
+      <td style="text-align:center">Moderate</td>
+      <td style="text-align:center">Moderate</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">GAE</td>
+      <td style="text-align:center">High</td>
+      <td style="text-align:center">Moderate</td>
+      <td style="text-align:center">Low</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">GI</td>
+      <td style="text-align:center">High</td>
+      <td style="text-align:center">High</td>
+      <td style="text-align:center">Low</td>
+    </tr>
+    <tr>
+      <td style="text-align:left"><strong>LRP (AH+LN) proposed</strong></td>
+      <td style="text-align:center"><strong>Very High</strong></td>
+      <td style="text-align:center"><strong>Very High</strong></td>
+      <td style="text-align:center"><strong>Very Low</strong></td>
+    </tr>
+  </tbody>
+</table>
+
+### 🎯 **Key Insights**
+
+The proposed LRP method notably outperforms other approaches, delivering clearer, more meaningful explanations and effectively highlighting the most relevant features across diverse datasets.
 
 <h3 id="designed-solutions">4. Designed solutions</h3>
 <p>Authors then proposed propagation rules that are conservative by design, taking as a starting point the [formula](chain-rule).</p>
