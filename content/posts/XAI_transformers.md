@@ -344,7 +344,7 @@ To evaluate how good the explanations were, they looked at two key aspects:
 <h4 id="quantitative-results">6.1 Quantitative Results</h4>
 
 <p>
-For the quantitative evaluation, the authors use <strong>AUAC</strong> (Area Under the Activation Curve), that measures how well an explanation highlights the most relevant parts of the input, according to the model’s own internal behavior. In this context, a higher AUAC indicates a more faithful and precise explanation.
+For the quantitative evaluation, the authors use <strong>AUAC</strong> (Area Under the Activation Curve), that measures how well an explanation highlights the most relevant parts of the input, according to the model’s own internal behavior. The AUAC metric is computed from evaluation setups where only the most (or least) relevant parts of the input are kept, to test how well explanations reflect the model's decision-making. In this context, a higher AUAC indicates a more faithful and precise explanation.
 </p>
 
 <style>
