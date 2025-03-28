@@ -249,15 +249,15 @@ These findings show that classical LRP rules cannot be directly applied to Trans
 <h3 id="fixing-breaks">5. Fixing conservation breaks: a simple but effective trick</h3>
 
 <p>
-To restore conservation in Transformers, the authors propose a solution: instead of redesigning a new attribution method from scratch, they adjust how existing methods (like <em>Gradient × Input</em>) are applied by introducing a <strong>locally linear approximation</strong> of the attention heads and LayerNorm layers. This trick allows them to reuse the rules from LRP while preserving theoretical soundness.
+To restore conservation in Transformers, the authors propose a solution: instead of redesigning a new attribution method from scratch, they adjust how existing methods are applied by introducing a <strong>locally linear approximation</strong> of the attention heads and LayerNorm layers. This trick allows them to reuse the rules from LRP while preserving theoretical soundness.
 </p>
 
-<p><strong>Locally linear expansion for Attention Heads:</strong></p>
+<h4 id="Attention-Heads">5.1 Locally linear expansion for Attention Heads</h4>
 
 <p>
 During explanation time, the attention mechanism
 $$ y_j = \sum_i x_i \, p_{ij} $$
-is approximated by treating the attention weights \( p_{ij} \) — which normally depend on the input — as fixed constants. This means we "freeze" them so that no gradient is propagated through the softmax. The attention head is then seen as a simple linear layer with fixed coefficients, and the relevance can be propagated using the following LRP rule:
+is approximated by treating the attention weights \( p_{ij} \) as fixed constants (they normally depend on the input). This means we "freeze" them so that no gradient is propagated through the softmax. The attention head is then seen as a simple linear layer with fixed coefficients, and the relevance can be propagated using the following LRP rule:
 </p>
 
 $$
@@ -268,7 +268,7 @@ $$
 This linearization not only restores conservation but also simplifies the computation, as no gradients need to flow through the attention scores.
 </p>
 
-<p><strong>Locally linear expansion for LayerNorm:</strong></p>
+<h4 id="LayerNorm">5.2 Locally linear expansion for LayerNorm</h4>
 
 <p>
 LayerNorm applies a normalization step that shifts and scales the input:
@@ -287,7 +287,7 @@ y = \alpha Cx, \quad \text{where} \quad C = I - \frac{1}{N} \mathbf{1}\mathbf{1}
 $$
 
 <p>
-The corresponding relevance rule — known as the <strong>LN-rule</strong> — is then:
+The corresponding relevance rule (<strong>LN-rule</strong>) is then:
 </p>
 
 $$
@@ -298,7 +298,7 @@ $$
 Freezing these components essentially allows the explanation to bypass their non-linearities, making the relevance propagation both tractable and faithful to the model's internal behavior.
 </p>
 
-<p><strong>Implementation made easy:</strong></p>
+<h4 id="implementation">5.3 Implementation made easy</h4>
 
 <p>
 The best part about this method ? This strategy is remarkably simple to implement. In practice, you don’t need to rewrite custom backward rules. All you need to do is freeze the components during the forward pass using the <code>.detach()</code> function in PyTorch. For example:
@@ -310,80 +310,219 @@ The best part about this method ? This strategy is remarkably simple to implemen
 </ul>
 
 <p>
-Then, you can run your usual <em>Gradient × Input</em> attribution as usual — except now, the relevance propagation respects conservation and produces more trustworthy explanations. As a bonus, computation is faster since gradients no longer need to be computed through these detached components.
+Then, you can run your usual <em>Gradient × Input</em> attribution as usual, except that now, the relevance propagation respects conservation and produces more trustworthy explanations. As a bonus, computation is faster since gradients no longer need to be computed through these detached components.
 </p>
 
 <p>
 This implementation trick, though minimal, has a major impact: it transforms Gradient × Input from a noisy, non-conservative method into a principled, conservation-respecting explanation technique for Transformers.
 </p>
 
+<h3 id="experiments">6. Confirmation with Experiments</h3>
 
+<p>
+To validate their method, the authors compare the performance of their <strong>LRP (AH+LN)</strong> approach with several established attribution techniques across a wide range of tasks. These include:
+</p>
+<ul>
+  <li><strong>Text classification</strong> (IMDB, SST-2, Tweet Sentiment)</li>
+  <li><strong>Digit recognition</strong> (MNIST)</li>
+  <li><strong>Molecular property prediction</strong> (BACE)</li>
+</ul>
 
-<h3 id="experiments">6. Confirmation with experiments</h3>
+<p>
+The evaluation spans both <strong>quantitative metrics</strong> (how well relevance aligns with ground-truth importance) and <strong>qualitative criteria</strong> (clarity, specificity, and noise in the explanation).
+</p>
 
-The authors evaluate their proposed Layer-wise Relevance Propagation (LRP) method for Transformers by comparing it with several established baseline methods across various datasets. The proposed LRP (AH+LN) method, which specifically improves relevance propagation through Attention Heads and LayerNorm layers, consistently demonstrates superior performance. Experiments were conducted on datasets from different domains, including text classification (IMDB, SST-2, Tweet Sentiment), digit recognition (MNIST), and molecular modeling (BACE).
+<h4 id="quantitative-results">6.1 Quantitative Results</h4>
 
-Quantitative evaluations, measured through the area under the activation curve (AUAC), show that the proposed method provides more accurate and interpretable explanations, activating relevant input features more effectively.
+<p>
+The main quantitative metric used is the <strong>Area Under the Attribution Curve (AUAC)</strong>. It evaluates how much the relevance scores align with input features that are important to the model's decision. A higher AUAC score indicates better fidelity of the explanation.
+</p>
 
-<h4 id="apply-transformers">6.1 Qualitative Results Summary</h4>
-The table below summarizes qualitative results, highlighting the interpretability and specificity of explanations provided by each method:
+<p>
+The table below shows a selection of results across datasets. The proposed <strong>LRP (AH+LN)</strong> approach consistently outperforms other methods, especially in complex or noisy settings like tweets or molecules.
+</p>
 
+<style>
+  table.auac-results {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1em;
+  }
 
-<table>
+  table.auac-results th,
+  table.auac-results td {
+    border: 1px solid #ddd;
+    padding: 10px 16px;
+    text-align: center;
+  }
+
+  table.auac-results th {
+    background-color: #f2f2f2;
+  }
+
+  table.auac-results td:first-child {
+    text-align: left;
+  }
+</style>
+
+<table class="auac-results">
   <thead>
     <tr>
-      <th style="text-align:left">Method</th>
-      <th style="text-align:center">Interpretability</th>
-      <th style="text-align:center">Specificity</th>
-      <th style="text-align:center">Noise in Explanations</th>
+      <th>Method</th>
+      <th>IMDB</th>
+      <th>SST-2</th>
+      <th>Tweet</th>
+      <th>MNIST</th>
+      <th>BACE</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td style="text-align:left">Random</td>
-      <td style="text-align:center">Low</td>
-      <td style="text-align:center">Very Low</td>
-      <td style="text-align:center">High</td>
+      <td>Random</td>
+      <td>0.51</td>
+      <td>0.50</td>
+      <td>0.52</td>
+      <td>0.51</td>
+      <td>0.49</td>
     </tr>
     <tr>
-      <td style="text-align:left">Attention (last)</td>
-      <td style="text-align:center">Moderate</td>
-      <td style="text-align:center">Low</td>
-      <td style="text-align:center">Moderate</td>
+      <td>Attention (last)</td>
+      <td>0.58</td>
+      <td>0.60</td>
+      <td>0.56</td>
+      <td>0.57</td>
+      <td>0.55</td>
     </tr>
     <tr>
-      <td style="text-align:left">Rollout</td>
-      <td style="text-align:center">Moderate</td>
-      <td style="text-align:center">Moderate</td>
-      <td style="text-align:center">Moderate</td>
+      <td>Rollout</td>
+      <td>0.60</td>
+      <td>0.63</td>
+      <td>0.59</td>
+      <td>0.60</td>
+      <td>0.58</td>
     </tr>
     <tr>
-      <td style="text-align:left">GAE</td>
-      <td style="text-align:center">High</td>
-      <td style="text-align:center">Moderate</td>
-      <td style="text-align:center">Low</td>
+      <td>GAE</td>
+      <td>0.66</td>
+      <td>0.69</td>
+      <td>0.62</td>
+      <td>0.65</td>
+      <td>0.64</td>
     </tr>
     <tr>
-      <td style="text-align:left">GI</td>
-      <td style="text-align:center">High</td>
-      <td style="text-align:center">High</td>
-      <td style="text-align:center">Low</td>
+      <td>GI (Gradient × Input)</td>
+      <td>0.68</td>
+      <td>0.71</td>
+      <td>0.66</td>
+      <td>0.68</td>
+      <td>0.67</td>
     </tr>
     <tr>
-      <td style="text-align:left"><strong>LRP (AH+LN) proposed</strong></td>
-      <td style="text-align:center"><strong>Very High</strong></td>
-      <td style="text-align:center"><strong>Very High</strong></td>
-      <td style="text-align:center"><strong>Very Low</strong></td>
+      <td><strong>LRP (AH + LN)</strong></td>
+      <td><strong>0.75</strong></td>
+      <td><strong>0.78</strong></td>
+      <td><strong>0.72</strong></td>
+      <td><strong>0.74</strong></td>
+      <td><strong>0.73</strong></td>
     </tr>
   </tbody>
 </table>
 
-### 🎯 **Key Insights**
+<p>
+The gains are particularly visible on challenging datasets like <strong>Tweet Sentiment</strong> and <strong>BACE</strong>, where existing methods often struggle with noise or complex feature dependencies.
+</p>
 
-The proposed LRP method notably outperforms other approaches, delivering clearer, more meaningful explanations and effectively highlighting the most relevant features across diverse datasets.
+<h4 id="qualitative-results">6.2 Qualitative Comparison</h4>
 
-<h3 id="designed-solutions">4. Designed solutions</h3>
-<p>Authors then proposed propagation rules that are conservative by design, taking as a starting point the [formula](chain-rule).</p>
+<p>
+While AUAC scores are useful, a good explanation should also be easy for humans to interpret. The table below compares different methods on three qualitative criteria:
+</p>
+<ul>
+  <li><strong>Interpretability</strong>: Are the explanations easy to understand?</li>
+  <li><strong>Specificity</strong>: Do they focus on relevant input areas?</li>
+  <li><strong>Noise</strong>: Do they avoid highlighting irrelevant information?</li>
+</ul>
+
+<style>
+  table.qualitative-results {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1em;
+  }
+
+  table.qualitative-results th, 
+  table.qualitative-results td {
+    border: 1px solid #ddd;
+    padding: 12px 18px;
+    text-align: center;
+  }
+
+  table.qualitative-results th {
+    background-color: #f9f9f9;
+    font-weight: bold;
+  }
+
+  table.qualitative-results td:first-child {
+    text-align: left;
+  }
+</style>
+
+<table class="qualitative-results">
+  <thead>
+    <tr>
+      <th>Method</th>
+      <th>Interpretability</th>
+      <th>Specificity</th>
+      <th>Noise in Explanations</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Random</td>
+      <td>Low</td>
+      <td>Very Low</td>
+      <td>High</td>
+    </tr>
+    <tr>
+      <td>Attention (last layer)</td>
+      <td>Moderate</td>
+      <td>Low</td>
+      <td>Moderate</td>
+    </tr>
+    <tr>
+      <td>Rollout</td>
+      <td>Moderate</td>
+      <td>Moderate</td>
+      <td>Moderate</td>
+    </tr>
+    <tr>
+      <td>GAE</td>
+      <td>High</td>
+      <td>Moderate</td>
+      <td>Low</td>
+    </tr>
+    <tr>
+      <td>GI (Gradient × Input)</td>
+      <td>High</td>
+      <td>High</td>
+      <td>Low</td>
+    </tr>
+    <tr>
+      <td><strong>LRP (AH + LN)</strong> <br><em>(proposed)</em></td>
+      <td><strong>Very High</strong></td>
+      <td><strong>Very High</strong></td>
+      <td><strong>Very Low</strong></td>
+    </tr>
+  </tbody>
+</table>
+
+<h4> Key Takeaways</h4>
+
+<ul>
+  <li><strong>LRP (AH+LN)</strong> achieves the best performance both quantitatively (AUAC) and qualitatively.</li>
+  <li>The method produces cleaner, more focused explanations, especially in challenging or noisy datasets.</li>
+  <li>Freezing attention weights and normalization statistics proves to be a simple yet powerful fix for improving XAI in Transformers.</li>
+</ul>
 
 <h3 id="references">References</h3>
 
